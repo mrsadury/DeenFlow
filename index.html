@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeenFlow - Your Deen, Your Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Glassmorphism Base for Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1); /* Light background for dark theme */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Safari */
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); /* Softer shadow */
+        }
+
+        /* Animated beads for Tasbeeh (conceptual) */
+        .bead {
+            width: 20px;
+            height: 20px;
+            background-color: #76ABAE; /* Tealish color */
+            border-radius: 50%;
+            margin: 5px;
+            transition: transform 0.2s ease-in-out;
+            display: inline-block;
+        }
+        .bead:active {
+            transform: scale(1.2);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* Dim background */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            margin: auto;
+            padding: 20px;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        /* Active Nav Item */
+        .nav-item.active {
+            color: #38bdf8; /* Tailwind sky-500 */
+        }
+        .nav-item.active i {
+            color: #38bdf8;
+        }
+        
+        /* For Qibla Compass (conceptual) */
+        #compass-needle {
+            width: 2px;
+            height: 40px;
+            background-color: red;
+            position: absolute;
+            left: 50%;
+            top: 10%;
+            transform-origin: 50% 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col">
+
+    <!-- Name Popup Modal -->
+    <div id="namePopupModal" class="modal flex">
+        <div class="modal-content glass-card p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4" data-translate="enter_your_name">Enter Your Name</h2>
+            <input type="text" id="userNameInput" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white mb-4" placeholder="e.g., Abdullah">
+            <button id="saveNameButton" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded w-full" data-translate="save_name">Save Name</button>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div id="onboardingModal" class="modal">
+        <div class="modal-content glass-card p-6">
+            <h2 class="text-2xl font-bold mb-4 text-center" data-translate="welcome_deenflow">Welcome to DeenFlow!</h2>
+            
+            <div class="mb-4">
+                <label for="languageSelect" class="block mb-2 text-sm font-medium" data-translate="select_language">Select Language:</label>
+                <select id="languageSelect" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white">
+                    <option value="en">English</option>
+                    <option value="bn">বাংলা (Bangla)</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                </select>
+            </div>
+
+            <!-- Theme selection (only dark for now) -->
+            <p class="mb-4 text-sm" data-translate="theme_note">Dark theme is enabled by default for a futuristic experience.</p>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2" data-translate="setup_goals">Setup Your Daily Goals (Optional):</h3>
+                <div class="flex items-center mb-2">
+                    <label for="salatGoal" class="w-1/3" data-translate="salat">Salat:</label>
+                    <input type="number" id="salatGoal" value="5" class="w-2/3 p-1 rounded bg-gray-700 border border-gray-600 text-white">
+                </div>
+                <div class="flex items-center mb-2">
+                    <label for="quranGoal" class="w-1/3" data-translate="quran_pages">Quran (Pages):</label>
+                    <input type="number" id="quranGoal" value="2" class="w-2/3 p-1 rounded bg-gray-700 border border-gray-600 text-white">
+                </div>
+                <div class="flex items-center mb-2">
+                    <label for="dhikrGoal" class="w-1/3" data-translate="dhikr_count">Dhikr (Count):</label>
+                    <input type="number" id="dhikrGoal" value="100" class="w-2/3 p-1 rounded bg-gray-700 border border-gray-600 text-white">
+                </div>
+            </div>
+
+            <button id="finishOnboardingButton" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded w-full" data-translate="get_started">Get Started!</button>
+        </div>
+    </div>
+
+    <!-- AI Huzur Modal -->
+    <div id="aiHuzurModal" class="modal">
+        <div class="modal-content glass-card p-4 flex flex-col h-[80vh] max-h-[600px]">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
+                <h2 class="text-xl font-bold" data-translate="ai_huzur_assistant">AI Huzur Assistant</h2>
+                <button id="closeAiHuzurModal" class="text-gray-400 hover:text-white">×</button>
+            </div>
+            <div id="aiChatbox" class="flex-grow overflow-y-auto mb-3 p-2 bg-gray-800/50 rounded space-y-2">
+                <!-- Chat messages will appear here -->
+                 <div class="p-2 rounded bg-sky-600/30 text-sm self-start max-w-[80%]">
+                    <p data-translate="ai_huzur_welcome">Assalamu Alaikum! How can I assist you with your deen today?</p>
+                </div>
+            </div>
+            <div class="flex">
+                <input type="text" id="aiHuzurInput" class="flex-grow p-2 rounded-l bg-gray-700 border border-gray-600 text-white" placeholder="Ask a question...">
+                <button id="sendAiHuzurQuery" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-r" data-translate="send">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Content -->
+    <div id="appContainer" class="flex-grow overflow-y-auto pb-20"> <!-- pb-20 for bottom nav -->
+        
+        <!-- Current Screen will be rendered here -->
+        <div id="currentScreen">
+            <!-- Home Screen (Default) -->
+            <div id="homeScreen" class="p-4 space-y-6">
+                <!-- Top Header -->
+                <header class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-semibold" id="greetingText">Assalamu Alaikum, User Bhai!</h1>
+                        <p class="text-sky-400 text-sm" data-translate="slogan">Flow With Your Deen Daily!</p>
+                    </div>
+                    <img src="https://via.placeholder.com/50/FFFFFF/000000?Text=User" alt="User Avatar" id="userAvatar" class="w-12 h-12 rounded-full border-2 border-sky-500">
+                </header>
+
+                <!-- Daily Habits Section -->
+                <section class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="daily_habits">Daily Habits</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                        <div class="bg-sky-700/30 p-3 rounded-lg">
+                            <i class="fas fa-mosque fa-2x mb-1"></i>
+                            <p data-translate="salat">Salat</p>
+                            <p class="text-xs"><span id="salatProgress">0</span>/5</p>
+                        </div>
+                        <div class="bg-green-700/30 p-3 rounded-lg">
+                            <i class="fas fa-book-quran fa-2x mb-1"></i>
+                            <p data-translate="quran">Quran</p>
+                            <p class="text-xs"><span id="quranProgress">0</span> pages</p>
+                        </div>
+                        <div class="bg-purple-700/30 p-3 rounded-lg">
+                            <i class="fas fa-hands-praying fa-2x mb-1"></i>
+                            <p data-translate="dhikr">Dhikr</p>
+                             <p class="text-xs"><span id="dhikrProgress">0</span> times</p>
+                        </div>
+                        <div class="bg-yellow-700/30 p-3 rounded-lg">
+                            <i class="fas fa-heart fa-2x mb-1"></i>
+                            <p data-translate="deeds">Deeds</p>
+                            <button class="text-xs p-1 bg-yellow-500/50 rounded mt-1" data-translate="log_deed">Log Deed</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Random Verse Generator -->
+                <section id="randomVerseSection" class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="random_verse">Random Verse</h2>
+                    <div id="verseDisplay" class="space-y-2">
+                        <p class="text-lg text-right font-mono" dir="rtl" id="verseArabic">Loading...</p>
+                        <p class="text-sm text-gray-300" id="verseEnglish">Loading...</p>
+                        <p class="text-xs text-sky-400" id="verseReference">Surah X: Ayah Y</p>
+                    </div>
+                    <button id="refreshVerse" class="mt-2 text-sm bg-sky-600/50 hover:bg-sky-500/70 px-3 py-1 rounded" data-translate="new_verse">New Verse</button>
+                </section>
+
+                <!-- Random Hadith Generator -->
+                <section id="randomHadithSection" class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="random_hadith">Random Hadith</h2>
+                    <div id="hadithDisplay" class="space-y-1">
+                        <p class="text-sm text-gray-300" id="hadithText">Loading...</p>
+                        <p class="text-xs text-sky-400" id="hadithReference">Reference: Loading...</p>
+                    </div>
+                    <button id="refreshHadith" class="mt-2 text-sm bg-sky-600/50 hover:bg-sky-500/70 px-3 py-1 rounded" data-translate="new_hadith">New Hadith</button>
+                </section>
+
+                <!-- Quote/Reminder Card -->
+                <section class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="daily_reminder">Daily Reminder</h2>
+                    <p class="text-sm text-gray-300" id="quoteText">"The best of deeds are those that are consistent, even if they are few." - Prophet Muhammad (ﷺ)</p>
+                </section>
+
+                <!-- Deen Points Overview -->
+                <section class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="deen_points">Deen Points</h2>
+                    <p class="text-3xl font-bold text-sky-400"><span id="deenPointsDisplay">0</span> XP</p>
+                    <p class="text-xs text-gray-400" data-translate="keep_it_up">Keep up the good work!</p>
+                </section>
+
+                <!-- Quick Tools Shortcuts -->
+                <section>
+                    <h2 class="text-lg font-semibold mb-3" data-translate="quick_tools">Quick Tools</h2>
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <button data-target="toolsScreen_tasbeeh" class="nav-link-button glass-card p-3 rounded-lg">
+                            <i class="fas fa-infinity fa-2x mb-1 text-sky-400"></i>
+                            <p data-translate="tasbeeh">Tasbeeh</p>
+                        </button>
+                        <button data-target="toolsScreen_qibla" class="nav-link-button glass-card p-3 rounded-lg">
+                            <i class="fas fa-compass fa-2x mb-1 text-green-400"></i>
+                            <p data-translate="qibla">Qibla</p>
+                        </button>
+                        <button id="quickLaunchAiHuzur" class="glass-card p-3 rounded-lg">
+                            <i class="fas fa-robot fa-2x mb-1 text-purple-400"></i>
+                            <p data-translate="ai_huzur">AI Huzur</p>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Ambient Music Player (Placeholder) -->
+                <section class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="islamic_tunes">Ambient Islamic Tunes</h2>
+                    <audio id="islamicTunePlayer" controls class="w-full">
+                        <!-- <source src="your-islamic-tune.mp3" type="audio/mpeg"> -->
+                        Your browser does not support the audio element.
+                    </audio>
+                    <p class="text-xs text-gray-400 mt-1" data-translate="music_placeholder_note">Note: Add your audio file source here.</p>
+                </section>
+
+                 <!-- Donation Section -->
+                <section class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="support_deenflow">Support DeenFlow</h2>
+                    <p class="text-sm text-gray-300 mb-2" data-translate="donation_message">
+                        Help us continue developing and improving DeenFlow. Your generous donations allow us to maintain servers, add new features, and reach more users. May Allah reward you for your contribution.
+                    </p>
+                    <div class="bg-sky-700/30 p-3 rounded-lg">
+                        <p class="font-semibold" data-translate="nagad">Nagad (Personal):</p>
+                        <p class="text-lg">01837941711</p>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Other Screens (hidden by default) -->
+            <div id="toolsScreen" class="p-4 space-y-6 hidden">
+                <h1 class="text-2xl font-semibold" data-translate="islamic_tools">Islamic Tools</h1>
+                <!-- Smart Tasbeeh Counter -->
+                <div id="toolsScreen_tasbeeh" class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="smart_tasbeeh">Smart Tasbeeh Counter</h2>
+                    <div class="text-center">
+                        <p class="text-5xl font-bold mb-4" id="tasbeehCount">0</p>
+                        <div class="mb-4">
+                            <!-- Conceptual Beads -->
+                            <span class="bead"></span><span class="bead"></span><span class="bead"></span>
+                        </div>
+                        <button id="incrementTasbeeh" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-full text-lg mb-2" data-translate="count">Count</button>
+                        <button id="resetTasbeeh" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-sm" data-translate="reset">Reset</button>
+                    </div>
+                    <div class="mt-4">
+                        <input type="text" id="zikrName" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white mb-2" placeholder="Zikr Name (e.g., SubhanAllah)">
+                        <button id="saveZikrSession" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full" data-translate="save_session">Save Session</button>
+                    </div>
+                    <div id="savedZikrSessions" class="mt-3 text-sm">
+                        <h3 class="font-semibold" data-translate="saved_sessions">Saved Sessions:</h3>
+                        <!-- Saved sessions will be listed here -->
+                    </div>
+                </div>
+                <!-- Qibla Finder -->
+                <div id="toolsScreen_qibla" class="glass-card p-4 mt-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="qibla_finder">Qibla Finder</h2>
+                    <p class="text-sm text-gray-300 mb-2" data-translate="qibla_permission_note">Enable location and device orientation for accurate Qibla direction. (This is a UI placeholder)</p>
+                    <div class="relative w-32 h-32 mx-auto bg-gray-700 rounded-full border-4 border-sky-500 flex items-center justify-center">
+                        <div id="compass-needle"></div>
+                        <span class="text-xs">N</span>
+                    </div>
+                    <p class="text-center mt-2" data-translate="qibla_direction_loading">Detecting Qibla...</p>
+                    <p class="text-xs text-center mt-1" data-translate="qibla_fallback">Fallback: <a href="https://qiblafinder.withgoogle.com/" target="_blank" class="text-sky-400 underline">Use Google Qibla Finder</a></p>
+                </div>
+                <!-- Prayer Time Reminder -->
+                <div id="toolsScreen_prayer" class="glass-card p-4 mt-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="prayer_times">Prayer Times</h2>
+                    <p class="text-sm text-gray-300 mb-2" data-translate="prayer_times_location_note">Based on your location (requires permission). Notifications with Azan. (UI Placeholder)</p>
+                    <div id="prayerTimesList" class="space-y-1">
+                        <p>Fajr: Loading...</p>
+                        <p>Dhuhr: Loading...</p>
+                        <p>Asr: Loading...</p>
+                        <p>Maghrib: Loading...</p>
+                        <p>Isha: Loading...</p>
+                    </div>
+                </div>
+                <!-- Zakat Calculator -->
+                <div id="toolsScreen_zakat" class="glass-card p-4 mt-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="zakat_calculator">Zakat Calculator</h2>
+                     <p class="text-sm text-gray-300 mb-2" data-translate="zakat_info_note">(Simplified - Consult a scholar for accuracy)</p>
+                    <div>
+                        <label class="block mb-1" data-translate="cash_savings">Cash/Savings (in your currency):</label>
+                        <input type="number" id="zakatCash" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2" placeholder="0">
+                        <label class="block mb-1" data-translate="gold_grams">Gold (grams):</label>
+                        <input type="number" id="zakatGold" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2" placeholder="0">
+                        <label class="block mb-1" data-translate="silver_grams">Silver (grams):</label>
+                        <input type="number" id="zakatSilver" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2" placeholder="0">
+                        <button id="calculateZakat" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded w-full" data-translate="calculate_zakat">Calculate Zakat</button>
+                        <p class="mt-2" data-translate="zakat_due">Zakat Due: <span id="zakatResult">0.00</span></p>
+                    </div>
+                </div>
+                 <!-- Islamic Date Converter -->
+                <div id="toolsScreen_date" class="glass-card p-4 mt-4">
+                    <h2 class="text-lg font-semibold mb-3" data-translate="islamic_date_converter">Islamic Date Converter</h2>
+                    <p class="text-sm text-gray-300 mb-2" data-translate="date_converter_note">(UI Placeholder - requires date library)</p>
+                    <div>
+                        <label data-translate="gregorian_date">Gregorian Date:</label>
+                        <input type="date" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2">
+                        <p data-translate="hijri_date_equivalent">Hijri Equivalent: Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quranScreen" class="p-4 space-y-6 hidden">
+                <h1 class="text-2xl font-semibold" data-translate="quran_study">Quran Study</h1>
+                <p data-translate="quran_screen_placeholder">Full Quran reader and Tafsir features coming soon, InshaAllah. For now, use the Random Ayah on Home.</p>
+            </div>
+
+            <div id="aiScreen" class="p-4 space-y-6 hidden">
+                <h1 class="text-2xl font-semibold" data-translate="ai_features">AI Features</h1>
+                <p data-translate="ai_screen_info">Access the AI Huzur Assistant from the Quick Tools or Bottom Navigation.</p>
+                <button id="launchAiHuzurFromAiScreen" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded" data-translate="open_ai_huzur">Open AI Huzur</button>
+            </div>
+
+            <div id="settingsScreen" class="p-4 space-y-6 hidden">
+                <h1 class="text-2xl font-semibold" data-translate="settings">Settings</h1>
+                <div class="glass-card p-4">
+                    <label for="languageSetting" class="block mb-2 text-sm font-medium" data-translate="app_language">App Language:</label>
+                    <select id="languageSetting" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white">
+                        <option value="en">English</option>
+                        <option value="bn">বাংলা (Bangla)</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                    </select>
+                </div>
+                <div class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="notifications">Notifications</h2>
+                    <p class="text-sm text-gray-300" data-translate="notification_settings_placeholder">Prayer time and daily reminder notification settings will appear here.</p>
+                </div>
+                 <div class="glass-card p-4">
+                    <h2 class="text-lg font-semibold mb-2" data-translate="data_management">Data Management</h2>
+                    <button id="resetAppData" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm" data-translate="reset_app_data">Reset App Data (Clear LocalStorage)</button>
+                     <p class="text-xs text-gray-400 mt-1" data-translate="reset_data_warning">This will clear your name, goals, and language preference.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-700/50 flex justify-around items-center p-3">
+        <button data-target="homeScreen" class="nav-item active flex flex-col items-center text-gray-300 hover:text-sky-400">
+            <i class="fas fa-home fa-lg"></i><span class="text-xs mt-1" data-translate="nav_home">Home</span>
+        </button>
+        <button data-target="toolsScreen" class="nav-item flex flex-col items-center text-gray-300 hover:text-sky-400">
+            <i class="fas fa-tools fa-lg"></i><span class="text-xs mt-1" data-translate="nav_tools">Tools</span>
+        </button>
+        <button data-target="quranScreen" class="nav-item flex flex-col items-center text-gray-300 hover:text-sky-400">
+            <i class="fas fa-book-quran fa-lg"></i><span class="text-xs mt-1" data-translate="nav_quran">Quran</span>
+        </button>
+        <button id="navAiHuzur" class="nav-item flex flex-col items-center text-gray-300 hover:text-sky-400">
+            <i class="fas fa-robot fa-lg"></i><span class="text-xs mt-1" data-translate="nav_ai">AI</span>
+        </button>
+        <button data-target="settingsScreen" class="nav-item flex flex-col items-center text-gray-300 hover:text-sky-400">
+            <i class="fas fa-cog fa-lg"></i><span class="text-xs mt-1" data-translate="nav_settings">Settings</span>
+        </button>
+    </nav>
+
+    <script>
+        // --- CONFIGURATION ---
+        // IMPORTANT: Replace with your actual key for testing, but DO NOT deploy this to a public server.
+        // For production, this key MUST be kept secret on a backend server.
+        const OPENROUTER_API_KEY = "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"; // YOUR PROVIDED KEY
+        const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                slogan: "Flow With Your Deen Daily!",
+                daily_habits: "Daily Habits", salat: "Salat", quran: "Quran", dhikr: "Dhikr", deeds: "Deeds",
+                log_deed: "Log Deed", random_verse: "Random Verse", new_verse: "New Verse",
+                random_hadith: "Random Hadith", new_hadith: "New Hadith", daily_reminder: "Daily Reminder",
+                deen_points: "Deen Points", keep_it_up: "Keep up the good work!", quick_tools: "Quick Tools",
+                tasbeeh: "Tasbeeh", qibla: "Qibla", ai_huzur: "AI Huzur",
+                nav_home: "Home", nav_tools: "Tools", nav_quran: "Quran", nav_ai: "AI", nav_settings: "Settings",
+                islamic_tools: "Islamic Tools", smart_tasbeeh: "Smart Tasbeeh Counter", count: "Count", reset: "Reset",
+                save_session: "Save Session", saved_sessions: "Saved Sessions:",
+                qibla_finder: "Qibla Finder", qibla_permission_note: "Enable location and device orientation for accurate Qibla direction. (This is a UI placeholder)",
+                qibla_direction_loading: "Detecting Qibla...", qibla_fallback: "Fallback:",
+                prayer_times: "Prayer Times", prayer_times_location_note: "Based on your location (requires permission). Notifications with Azan. (UI Placeholder)",
+                zakat_calculator: "Zakat Calculator", zakat_info_note: "(Simplified - Consult a scholar for accuracy)",
+                cash_savings: "Cash/Savings (in your currency):", gold_grams: "Gold (grams):", silver_grams: "Silver (grams):",
+                calculate_zakat: "Calculate Zakat", zakat_due: "Zakat Due:",
+                islamic_date_converter: "Islamic Date Converter", date_converter_note: "(UI Placeholder - requires date library)",
+                gregorian_date: "Gregorian Date:", hijri_date_equivalent: "Hijri Equivalent: Loading...",
+                quran_study: "Quran Study", quran_screen_placeholder: "Full Quran reader and Tafsir features coming soon, InshaAllah. For now, use the Random Ayah on Home.",
+                ai_features: "AI Features", ai_screen_info: "Access the AI Huzur Assistant from the Quick Tools or Bottom Navigation.",
+                open_ai_huzur: "Open AI Huzur", settings: "Settings", app_language: "App Language",
+                notifications: "Notifications", notification_settings_placeholder: "Prayer time and daily reminder notification settings will appear here.",
+                ai_huzur_assistant: "AI Huzur Assistant", send: "Send",
+                ai_huzur_welcome: "Assalamu Alaikum! How can I assist you with your deen today?",
+                islamic_tunes: "Ambient Islamic Tunes", music_placeholder_note: "Note: Add your audio file source here.",
+                enter_your_name: "Enter Your Name", save_name: "Save Name",
+                welcome_deenflow: "Welcome to DeenFlow!", select_language: "Select Language:",
+                theme_note: "Dark theme is enabled by default for a futuristic experience.",
+                setup_goals: "Setup Your Daily Goals (Optional):", quran_pages: "Quran (Pages):", dhikr_count: "Dhikr (Count):",
+                get_started: "Get Started!",
+                support_deenflow: "Support DeenFlow", 
+                donation_message: "Help us continue developing and improving DeenFlow. Your generous donations allow us to maintain servers, add new features, and reach more users. May Allah reward you for your contribution.",
+                nagad: "Nagad (Personal):",
+                data_management: "Data Management", reset_app_data: "Reset App Data (Clear LocalStorage)",
+                reset_data_warning: "This will clear your name, goals, and language preference."
+            },
+            bn: {
+                slogan: "আপনার দ্বীনের সাথে প্রতিদিন প্রবাহিত হোন!",
+                daily_habits: "দৈনিক অভ্যাস", salat: "সালাত", quran: "কুরআন", dhikr: "যিকির", deeds: "আমল",
+                log_deed: "আমল লগ করুন", random_verse: "এলোমেলো আয়াত", new_verse: "নতুন আয়াত",
+                random_hadith: "এলোমেলো হাদীস", new_hadith: "নতুন হাদীস", daily_reminder: "দৈনিক অনুস্মারক",
+                deen_points: "দ্বীন পয়েন্ট", keep_it_up: "ভালো কাজ চালিয়ে যান!", quick_tools: "দ্রুত সরঞ্জাম",
+                tasbeeh: "তাসবীহ", qibla: "কিবলা", ai_huzur: "এআই হুজুর",
+                nav_home: "হোম", nav_tools: "সরঞ্জাম", nav_quran: "কুরআন", nav_ai: "এআই", nav_settings: "সেটিংস",
+                islamic_tools: "ইসলামিক সরঞ্জাম", smart_tasbeeh: "স্মার্ট তাসবীহ কাউন্টার", count: "গণনা", reset: "রিসেট",
+                save_session: "সেশন সংরক্ষণ", saved_sessions: "সংরক্ষিত সেশন:",
+                qibla_finder: "কিবলা ফাইন্ডার", qibla_permission_note: "সঠিক কিবলা দিকনির্দেশের জন্য লোকেশন এবং ডিভাইস ওরিয়েন্টেশন সক্ষম করুন। (এটি একটি UI স্থানধারক)",
+                qibla_direction_loading: "কিবলা সনাক্ত করা হচ্ছে...", qibla_fallback: "ফলব্যাক:",
+                prayer_times: "নামাজের সময়", prayer_times_location_note: "আপনার অবস্থানের উপর ভিত্তি করে (অনুমতি প্রয়োজন)। আজান সহ বিজ্ঞপ্তি। (UI স্থানধারক)",
+                zakat_calculator: "যাকাত ক্যালকুলেটর", zakat_info_note: "(সরলীকৃত - নির্ভুলতার জন্য আলেমের সাথে পরামর্শ করুন)",
+                cash_savings: "নগদ/সঞ্চয় (আপনার মুদ্রায়):", gold_grams: "সোনা (গ্রাম):", silver_grams: "রূপা (গ্রাম):",
+                calculate_zakat: "যাকাত গণনা করুন", zakat_due: "প্রদেয় যাকাত:",
+                islamic_date_converter: "ইসলামিক তারিখ রূপান্তরকারী", date_converter_note: "(UI স্থানধারক - তারিখ লাইব্রেরি প্রয়োজন)",
+                gregorian_date: "গ্রেগরিয়ান তারিখ:", hijri_date_equivalent: "হিজরি সমতুল্য: লোড হচ্ছে...",
+                quran_study: "কুরআন অধ্যয়ন", quran_screen_placeholder: "সম্পূর্ণ কুরআন পাঠক এবং তাফসীর বৈশিষ্ট্য শীঘ্রই আসছে, ইনশাআল্লাহ। আপাতত, হোমে এলোমেলো আয়াত ব্যবহার করুন।",
+                ai_features: "এআই বৈশিষ্ট্য", ai_screen_info: "দ্রুত সরঞ্জাম বা নীচের নেভিগেশন থেকে এআই হুজুর অ্যাসিস্ট্যান্ট অ্যাক্সেস করুন।",
+                open_ai_huzur: "এআই হুজুর খুলুন", settings: "সেটিংস", app_language: "অ্যাপের ভাষা:",
+                notifications: "বিজ্ঞপ্তি", notification_settings_placeholder: "নামাজের সময় এবং দৈনিক অনুস্মারক বিজ্ঞপ্তি সেটিংস এখানে প্রদর্শিত হবে।",
+                ai_huzur_assistant: "এআই হুজুর সহকারী", send: "প্রেরণ করুন",
+                ai_huzur_welcome: "আসসালামু আলাইকুম! আজ আমি আপনার দ্বীনের ব্যাপারে কীভাবে সাহায্য করতে পারি?",
+                islamic_tunes: "সুমধুর ইসলামিক সুর", music_placeholder_note: "দ্রষ্টব্য: আপনার অডিও ফাইলের উৎস এখানে যোগ করুন।",
+                enter_your_name: "আপনার নাম লিখুন", save_name: "নাম সংরক্ষণ করুন",
+                welcome_deenflow: "দীনফ্লো-তে স্বাগতম!", select_language: "ভাষা নির্বাচন করুন:",
+                theme_note: "একটি আধুনিক অভিজ্ঞতার জন্য ডার্ক থিম ডিফল্টভাবে সক্রিয় করা হয়েছে।",
+                setup_goals: "আপনার দৈনিক লক্ষ্য নির্ধারণ করুন (ঐচ্ছিক):", quran_pages: "কুরআন (পৃষ্ঠা):", dhikr_count: "যিকির (সংখ্যা):",
+                get_started: "শুরু করুন!",
+                support_deenflow: "দীনফ্লো সমর্থন করুন",
+                donation_message: "দীনফ্লো-এর উন্নয়ন ও উন্নতিতে আমাদের সাহায্য করুন। আপনার উদার অনুদান আমাদের সার্ভার রক্ষণাবেক্ষণ, নতুন বৈশিষ্ট্য যুক্ত করতে এবং আরও ব্যবহারকারীদের কাছে পৌঁছাতে সহায়তা করে। আল্লাহ আপনাকে আপনার অবদানের জন্য পুরস্কৃত করুন।",
+                nagad: "নগদ (ব্যক্তিগত):",
+                data_management: "ডেটা ম্যানেজমেন্ট", reset_app_data: "অ্যাপ ডেটা রিসেট করুন (লোকালস্টোরেজ সাফ করুন)",
+                reset_data_warning: "এটি আপনার নাম, লক্ষ্য এবং ভাষা পছন্দ মুছে ফেলবে।"
+            },
+            hi: {
+                slogan: "अपने दीन के साथ प्रतिदिन प्रवाहित हों!",
+                daily_habits: "दैनिक आदतें", salat: "सलात", quran: "कुरान", dhikr: "ज़िक्र", deeds: "अमल",
+                log_deed: "अमल लॉग करें", random_verse: "यादृच्छिक आयत", new_verse: "नई आयत",
+                random_hadith: "यादृच्छिक हदीस", new_hadith: "नई हदीस", daily_reminder: "दैनिक अनुस्मारक",
+                deen_points: "दीन पॉइंट्स", keep_it_up: "अच्छा काम करते रहें!", quick_tools: "त्वरित उपकरण",
+                tasbeeh: "तस्बीह", qibla: "क़िबला", ai_huzur: "एआई हुज़ूर",
+                nav_home: "होम", nav_tools: "उपकरण", nav_quran: "कुरान", nav_ai: "एआई", nav_settings: "सेटिंग्स",
+                islamic_tools: "इस्लामी उपकरण", smart_tasbeeh: "स्मार्ट तस्बीह काउंटर", count: "गिनती", reset: "रीसेट",
+                save_session: "सत्र सहेजें", saved_sessions: "सहेजे गए सत्र:",
+                qibla_finder: "क़िबला खोजक", qibla_permission_note: "सटीक क़िबला दिशा के लिए स्थान और डिवाइस ओरिएंटेशन सक्षम करें। (यह एक UI प्लेसहोल्डर है)",
+                qibla_direction_loading: "क़िबला का पता लगाया जा रहा है...", qibla_fallback: "फालबैक:",
+                prayer_times: "प्रार्थना का समय", prayer_times_location_note: "आपके स्थान पर आधारित (अनुमति आवश्यक)। अज़ान के साथ सूचनाएं। (UI प्लेसहोल्डर)",
+                zakat_calculator: "ज़कात कैलकुलेटर", zakat_info_note: "(सरलीकृत - सटीकता के लिए विद्वान से परामर्श करें)",
+                cash_savings: "नकद/बचत (आपकी मुद्रा में):", gold_grams: "सोना (ग्राम):", silver_grams: "चांदी (ग्राम):",
+                calculate_zakat: "ज़कात की गणना करें", zakat_due: "देय ज़कात:",
+                islamic_date_converter: "इस्लामी तिथि परिवर्तक", date_converter_note: "(UI प्लेसहोल्डर - तिथि पुस्तकालय की आवश्यकता है)",
+                gregorian_date: "ग्रेगोरियन तिथि:", hijri_date_equivalent: "हिजरी समकक्ष: लोड हो रहा है...",
+                quran_study: "कुरान अध्ययन", quran_screen_placeholder: "पूर्ण कुरान रीडर और तफ़सीर सुविधाएँ जल्द ही आ रही हैं, इंशाअल्लाह। अभी के लिए, होम पर यादृच्छिक आयत का उपयोग करें।",
+                ai_features: "एआई सुविधाएँ", ai_screen_info: "त्वरित उपकरण या नीचे नेविगेशन से एआई हुज़ूर सहायक तक पहुँचें।",
+                open_ai_huzur: "एआई हुज़ूर खोलें", settings: "सेटिंग्स", app_language: "ऐप भाषा:",
+                notifications: "सूचनाएं", notification_settings_placeholder: "प्रार्थना समय और दैनिक अनुस्मारक अधिसूचना सेटिंग्स यहां दिखाई देंगी।",
+                ai_huzur_assistant: "एआई हुज़ूर सहायक", send: "भेजें",
+                ai_huzur_welcome: "अस्सलामु अलैकुम! आज मैं आपके दीन के मामले में आपकी कैसे मदद कर सकता हूँ?",
+                islamic_tunes: "इस्लामी मधुर धुनें", music_placeholder_note: "ध्यान दें: अपनी ऑडियो फ़ाइल का स्रोत यहाँ जोड़ें।",
+                enter_your_name: "अपना नाम दर्ज करें", save_name: "नाम सहेजें",
+                welcome_deenflow: "दीनफ्लो में आपका स्वागत है!", select_language: "भाषा चुनें:",
+                theme_note: "एक भविष्यवादी अनुभव के लिए डार्क थीम डिफ़ॉल्ट रूप से सक्षम है।",
+                setup_goals: "अपने दैनिक लक्ष्य निर्धारित करें (वैकल्पिक):", quran_pages: "कुरान (पृष्ठ):", dhikr_count: "ज़िक्र (संख्या):",
+                get_started: "शुरू हो जाओ!",
+                support_deenflow: "दीनफ्लो का समर्थन करें",
+                donation_message: "दीनफ्लो को विकसित करने और बेहतर बनाने में हमारी मदद करें। आपके उदार दान हमें सर्वर बनाए रखने, नई सुविधाएँ जोड़ने और अधिक उपयोगकर्ताओं तक पहुँचने की अनुमति देते हैं। अल्लाह आपको आपके योगदान के लिए पुरस्कृत करे।",
+                nagad: "नगद (व्यक्तिगत):",
+                data_management: "डेटा प्रबंधन", reset_app_data: "ऐप डेटा रीसेट करें (स्थानीय संग्रहण साफ़ करें)",
+                reset_data_warning: "यह आपका नाम, लक्ष्य और भाषा वरीयता साफ़ कर देगा।"
+            }
+        };
+
+        // --- GLOBAL STATE & ELEMENTS ---
+        let currentLanguage = localStorage.getItem('deenFlowLanguage') || 'en';
+        let userName = localStorage.getItem('deenFlowUserName') || 'User';
+        let deenPoints = parseInt(localStorage.getItem('deenFlowPoints') || '0');
+        
+        // Modals
+        const namePopupModal = document.getElementById('namePopupModal');
+        const onboardingModal = document.getElementById('onboardingModal');
+        const aiHuzurModal = document.getElementById('aiHuzurModal');
+
+        // Inputs & Buttons
+        const userNameInput = document.getElementById('userNameInput');
+        const saveNameButton = document.getElementById('saveNameButton');
+        const languageSelect = document.getElementById('languageSelect');
+        const languageSetting = document.getElementById('languageSetting'); // In settings
+        const finishOnboardingButton = document.getElementById('finishOnboardingButton');
+        const salatGoalInput = document.getElementById('salatGoal');
+        const quranGoalInput = document.getElementById('quranGoal');
+        const dhikrGoalInput = document.getElementById('dhikrGoal');
+
+        // Display elements
+        const greetingText = document.getElementById('greetingText');
+        const deenPointsDisplay = document.getElementById('deenPointsDisplay');
+        const verseArabic = document.getElementById('verseArabic');
+        const verseEnglish = document.getElementById('verseEnglish');
+        const verseReference = document.getElementById('verseReference');
+        const hadithText = document.getElementById('hadithText');
+        const hadithReference = document.getElementById('hadithReference');
+        const aiChatbox = document.getElementById('aiChatbox');
+        const aiHuzurInput = document.getElementById('aiHuzurInput');
+        
+        // Progress trackers
+        const salatProgressDisplay = document.getElementById('salatProgress');
+        const quranProgressDisplay = document.getElementById('quranProgress');
+        const dhikrProgressDisplay = document.getElementById('dhikrProgress');
+
+
+        // --- UTILITY FUNCTIONS ---
+        function updateUIText() {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[currentLanguage] && translations[currentLanguage][key]) {
+                    el.textContent = translations[currentLanguage][key];
+                } else if (translations.en[key]) { // Fallback to English
+                    el.textContent = translations.en[key];
+                }
+            });
+            // Update dynamic texts
+            greetingText.textContent = `${currentLanguage === 'bn' ? 'আসসালামু আলাইকুম' : currentLanguage === 'hi' ? 'अस्सलामु अलैकुम' : 'Assalamu Alaikum'}, ${userName} ${currentLanguage === 'bn' ? 'ভাই' : currentLanguage === 'hi' ? 'भाई' : 'Bhai'}!`;
+            aiHuzurInput.placeholder = translations[currentLanguage]?.ask_question || "Ask a question...";
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('#currentScreen > div').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            const targetButton = document.querySelector(`.nav-item[data-target="${screenId}"], .nav-item[data-target="${screenId.split('_')[0]}"]`); // Handle sub-tool screens
+            if (targetButton) targetButton.classList.add('active');
+        }
+        
+        function updateDeenPoints(points) {
+            deenPoints += points;
+            localStorage.setItem('deenFlowPoints', deenPoints.toString());
+            if(deenPointsDisplay) deenPointsDisplay.textContent = deenPoints;
+        }
+
+        function saveHabitProgress(habit, value) {
+            localStorage.setItem(`deenFlow${habit}Progress`, value.toString());
+            // Potentially update UI here too if needed immediately
+        }
+
+        function loadHabitProgress() {
+            salatProgressDisplay.textContent = localStorage.getItem('deenFlowSalatProgress') || '0';
+            quranProgressDisplay.textContent = localStorage.getItem('deenFlowQuranProgress') || '0';
+            dhikrProgressDisplay.textContent = localStorage.getItem('deenFlowDhikrProgress') || '0';
+            // In a full app, you'd compare these to goals and update UI accordingly
+        }
+
+        // --- API FUNCTIONS ---
+        async function fetchRandomAyah() {
+            if(!verseArabic) return; // If not on home screen
+            verseArabic.textContent = "Loading...";
+            verseEnglish.textContent = "";
+            verseReference.textContent = "";
+            try {
+                const randomAyahNum = Math.floor(Math.random() * 6236) + 1; // Total ayahs approx
+                const response = await fetch(`https://api.alquran.cloud/v1/ayah/${randomAyahNum}/editions/quran-uthmani,en.sahih`);
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const data = await response.json();
+                
+                const arabicAyah = data.data[0];
+                const englishAyah = data.data[1];
+
+                verseArabic.textContent = arabicAyah.text;
+                verseEnglish.textContent = englishAyah.text;
+                verseReference.textContent = `Surah ${arabicAyah.surah.englishName} (${arabicAyah.surah.number}): Ayah ${arabicAyah.numberInSurah}`;
+            } catch (error) {
+                console.error("Error fetching ayah:", error);
+                verseArabic.textContent = "Failed to load verse.";
+            }
+        }
+
+        async function fetchRandomHadith() {
+            if(!hadithText) return; // If not on home screen
+            hadithText.textContent = "Loading...";
+            hadithReference.textContent = "";
+            try {
+                const response = await fetch(OPENROUTER_CHAT_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-4o-mini", // or "openai/gpt-4o" for potentially better results
+                        messages: [{ role: "user", content: "Give me a random authentic hadith (Sahih Bukhari or Sahih Muslim preferred) with its full reference (e.g., Sahih Bukhari, Book 2, Hadith 34). Ensure the hadith is concise and impactful." }]
+                    })
+                });
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const data = await response.json();
+                const hadithContent = data.choices[0].message.content;
+                
+                // Basic parsing (GPT output can vary, this is an attempt)
+                const lines = hadithContent.split('\n');
+                let mainHadith = "";
+                let ref = "";
+                lines.forEach(line => {
+                    if(line.toLowerCase().includes("reference:") || line.toLowerCase().includes("sahih")){
+                        ref += line + " ";
+                    } else {
+                        mainHadith += line + " ";
+                    }
+                });
+
+                hadithText.textContent = mainHadith.trim() || "Could not parse Hadith text.";
+                hadithReference.textContent = ref.trim() || "Reference not found.";
+
+            } catch (error) {
+                console.error("Error fetching hadith:", error);
+                hadithText.textContent = "Failed to load hadith. Check API key and console.";
+            }
+        }
+
+        async function askAIHuzur(query) {
+            if (!query.trim()) return;
+
+            // User message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('p-2', 'rounded', 'bg-blue-600/70', 'text-sm', 'self-end', 'max-w-[80%]', 'ml-auto');
+            userMessageDiv.textContent = query;
+            aiChatbox.appendChild(userMessageDiv);
+            aiHuzurInput.value = ''; // Clear input
+
+            // AI thinking placeholder
+            const aiThinkingDiv = document.createElement('div');
+            aiThinkingDiv.classList.add('p-2', 'rounded', 'bg-sky-600/30', 'text-sm', 'self-start', 'max-w-[80%]', 'ai-thinking');
+            aiThinkingDiv.innerHTML = `<p><i>${translations[currentLanguage]?.ai_thinking || "AI Huzur is thinking..."}</i></p>`;
+            aiChatbox.appendChild(aiThinkingDiv);
+            aiChatbox.scrollTop = aiChatbox.scrollHeight; // Scroll to bottom
+
+            try {
+                const response = await fetch(OPENROUTER_CHAT_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-4o-mini", // or "openai/gpt-4o"
+                        messages: [
+                            { role: "system", content: `You are an AI Islamic scholar named AI Huzur. Respond in ${currentLanguage === 'bn' ? 'Bangla' : currentLanguage === 'hi' ? 'Hindi' : 'English'}. Provide short, clear, and concise answers like a knowledgeable Islamic scholar. If asked for a fatwa, explain the general scholarly opinions and refer to major schools of thought if relevant, but always advise consulting a local qualified scholar for personal fatwas. Prioritize authenticity and provide references for Hadith or Quranic verses if you cite them.` },
+                            { role: "user", content: query }
+                        ]
+                    })
+                });
+
+                aiChatbox.removeChild(aiThinkingDiv); // Remove thinking message
+
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     console.error("AI Huzur API Error:", errorData);
+                     throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.classList.add('p-2', 'rounded', 'bg-sky-600/30', 'text-sm', 'self-start', 'max-w-[80%]');
+                aiMessageDiv.textContent = aiResponse;
+                aiChatbox.appendChild(aiMessageDiv);
+
+            } catch (error) {
+                console.error("Error with AI Huzur:", error);
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.classList.add('p-2', 'rounded', 'bg-red-600/50', 'text-sm', 'self-start', 'max-w-[80%]');
+                errorMessageDiv.textContent = `Error: ${error.message}. Please check console and API key.`;
+                aiChatbox.appendChild(errorMessageDiv);
+            } finally {
+                aiChatbox.scrollTop = aiChatbox.scrollHeight;
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user name is set, if not, show popup
+            if (!localStorage.getItem('deenFlowUserName')) {
+                namePopupModal.style.display = 'flex';
+            } else {
+                namePopupModal.style.display = 'none';
+                // Check if onboarding is complete
+                if (!localStorage.getItem('deenFlowOnboardingComplete')) {
+                    onboardingModal.style.display = 'flex';
+                    languageSelect.value = currentLanguage; // Pre-fill from any previous setting
+                } else {
+                    onboardingModal.style.display = 'none';
+                    initializeMainApp();
+                }
+            }
+
+            // Event Listeners
+            saveNameButton.addEventListener('click', () => {
+                const name = userNameInput.value.trim();
+                if (name) {
+                    userName = name;
+                    localStorage.setItem('deenFlowUserName', userName);
+                    namePopupModal.style.display = 'none';
+                    greetingText.textContent = `${currentLanguage === 'bn' ? 'আসসালামু আলাইকুম' : currentLanguage === 'hi' ? 'अस्सलामु अलैकुम' : 'Assalamu Alaikum'}, ${userName} ${currentLanguage === 'bn' ? 'ভাই' : currentLanguage === 'hi' ? 'भाई' : 'Bhai'}!`;
+                    if (!localStorage.getItem('deenFlowOnboardingComplete')) {
+                        onboardingModal.style.display = 'flex';
+                        languageSelect.value = currentLanguage;
+                    } else {
+                        initializeMainApp(); // If name was missing but onboarding was done
+                    }
+                } else {
+                    alert("Please enter your name.");
+                }
+            });
+            
+            finishOnboardingButton.addEventListener('click', () => {
+                currentLanguage = languageSelect.value;
+                localStorage.setItem('deenFlowLanguage', currentLanguage);
+                localStorage.setItem('deenFlowSalatGoal', salatGoalInput.value);
+                localStorage.setItem('deenFlowQuranGoal', quranGoalInput.value);
+                localStorage.setItem('deenFlowDhikrGoal', dhikrGoalInput.value);
+                localStorage.setItem('deenFlowOnboardingComplete', 'true');
+                onboardingModal.style.display = 'none';
+                initializeMainApp();
+            });
+
+            // If user bypasses modals (e.g. by refreshing after name entry but before onboarding finish)
+            if (localStorage.getItem('deenFlowUserName') && localStorage.getItem('deenFlowOnboardingComplete')) {
+                 initializeMainApp();
+            }
+        });
+
+        function initializeMainApp() {
+            namePopupModal.style.display = 'none';
+            onboardingModal.style.display = 'none';
+            
+            currentLanguage = localStorage.getItem('deenFlowLanguage') || 'en';
+            userName = localStorage.getItem('deenFlowUserName') || 'User';
+            deenPoints = parseInt(localStorage.getItem('deenFlowPoints') || '0');
+            
+            languageSetting.value = currentLanguage; // Set language in settings dropdown
+
+            updateUIText();
+            loadHabitProgress();
+            if(deenPointsDisplay) deenPointsDisplay.textContent = deenPoints;
+            
+            // Initial content load for Home screen
+            if (document.getElementById('homeScreen').classList.contains('hidden') === false) {
+                fetchRandomAyah();
+                fetchRandomHadith();
+            }
+
+
+            // Navigation
+            document.querySelectorAll('.nav-item, .nav-link-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetScreenId = button.dataset.target;
+                    if (targetScreenId) {
+                        showScreen(targetScreenId);
+                        // Load content if switching to home
+                        if (targetScreenId === 'homeScreen') {
+                            fetchRandomAyah();
+                            fetchRandomHadith();
+                        }
+                    }
+                });
+            });
+
+            // AI Huzur Modal Triggers
+            document.getElementById('quickLaunchAiHuzur')?.addEventListener('click', () => aiHuzurModal.style.display = 'flex');
+            document.getElementById('navAiHuzur')?.addEventListener('click', () => aiHuzurModal.style.display = 'flex');
+            document.getElementById('launchAiHuzurFromAiScreen')?.addEventListener('click', () => aiHuzurModal.style.display = 'flex');
+            document.getElementById('closeAiHuzurModal').addEventListener('click', () => aiHuzurModal.style.display = 'none');
+            
+            document.getElementById('sendAiHuzurQuery').addEventListener('click', () => {
+                askAIHuzur(aiHuzurInput.value);
+            });
+            aiHuzurInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    askAIHuzur(aiHuzurInput.value);
+                }
+            });
+
+            // Refresh buttons
+            document.getElementById('refreshVerse')?.addEventListener('click', fetchRandomAyah);
+            document.getElementById('refreshHadith')?.addEventListener('click', fetchRandomHadith);
+
+            // Tasbeeh Counter
+            let tasbeehCount = 0;
+            const tasbeehCountDisplay = document.getElementById('tasbeehCount');
+            document.getElementById('incrementTasbeeh')?.addEventListener('click', () => {
+                tasbeehCount++;
+                if(tasbeehCountDisplay) tasbeehCountDisplay.textContent = tasbeehCount;
+                if (navigator.vibrate) navigator.vibrate(50); // Simple vibration
+            });
+            document.getElementById('resetTasbeeh')?.addEventListener('click', () => {
+                tasbeehCount = 0;
+                if(tasbeehCountDisplay) tasbeehCountDisplay.textContent = tasbeehCount;
+            });
+            document.getElementById('saveZikrSession')?.addEventListener('click', () => {
+                const zikrName = document.getElementById('zikrName').value || "Unnamed Zikr";
+                alert(`Session "${zikrName}" with count ${tasbeehCount} saved (conceptually).`);
+                // Actual saving would go to localStorage or backend
+            });
+
+            // Zakat Calculator (Simplified)
+            document.getElementById('calculateZakat')?.addEventListener('click', () => {
+                const cash = parseFloat(document.getElementById('zakatCash').value) || 0;
+                // Nisab and rates are highly variable and need real-time data
+                // This is a VERY rough placeholder. Gold rate ~ $60/g, Silver ~ $0.8/g
+                // Nisab for gold is 85g, silver 595g.
+                // Zakat is 2.5%
+                const goldGrams = parseFloat(document.getElementById('zakatGold').value) || 0;
+                const silverGrams = parseFloat(document.getElementById('zakatSilver').value) || 0;
+
+                let totalZakatableAmount = cash;
+                // Add logic for gold/silver value if they exceed nisab
+                // For simplicity, just assuming cash is primary and adding it.
+                // THIS IS NOT ACCURATE FOR REAL ZAKAT CALCULATION.
+                
+                const zakatDue = totalZakatableAmount * 0.025;
+                document.getElementById('zakatResult').textContent = zakatDue.toFixed(2);
+            });
+            
+            // Settings screen language change
+            languageSetting.addEventListener('change', (e) => {
+                currentLanguage = e.target.value;
+                localStorage.setItem('deenFlowLanguage', currentLanguage);
+                updateUIText();
+                // Reload AI chat welcome message if modal is open or for next opening
+                const aiWelcomeKey = 'ai_huzur_welcome';
+                const translatedWelcome = translations[currentLanguage]?.[aiWelcomeKey] || translations.en[aiWelcomeKey];
+                const firstMessageInChat = aiChatbox.querySelector('div > p');
+                if(firstMessageInChat && firstMessageInChat.getAttribute('data-translate') === aiWelcomeKey) {
+                    firstMessageInChat.textContent = translatedWelcome;
+                }
+            });
+
+            document.getElementById('resetAppData')?.addEventListener('click', () => {
+                if (confirm(translations[currentLanguage]?.reset_data_warning_confirm || "Are you sure you want to reset all app data? This cannot be undone.")) {
+                    localStorage.removeItem('deenFlowUserName');
+                    localStorage.removeItem('deenFlowLanguage');
+                    localStorage.removeItem('deenFlowPoints');
+                    localStorage.removeItem('deenFlowOnboardingComplete');
+                    localStorage.removeItem('deenFlowSalatGoal');
+                    localStorage.removeItem('deenFlowQuranGoal');
+                    localStorage.removeItem('deenFlowDhikrGoal');
+                    localStorage.removeItem('deenFlowSalatProgress');
+                    localStorage.removeItem('deenFlowQuranProgress');
+                    localStorage.removeItem('deenFlowDhikrProgress');
+                    // Add any other localStorage keys you use
+                    alert("App data has been reset. Please refresh the page.");
+                    window.location.reload();
+                }
+            });
+
+            // Mock daily reminder push (console log)
+            // In a real app, this would be a service worker or native notification
+            setTimeout(() => {
+                 console.log("Morning Push (mock): Make dua today!");
+                 // You could show a small toast notification here instead
+            }, 5000); // Show after 5 seconds for demo
+        }
+
+    </script>
+</body>
+</html>
